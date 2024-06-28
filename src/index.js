@@ -169,7 +169,9 @@ async function refreshAccessToken(currentToken) {
 	}
 }
 export default {
-	async scheduled(event, env, ctx) {
+	fetch: router.handle,
+
+	scheduled: async (event, env, ctx) => {
 		const freshReviews = await getTopReviews();
 		const updatedReviews = await updateDatabase(freshReviews, env);
 		const data = await getMovieReviewData(updatedReviews);
@@ -184,6 +186,17 @@ export default {
 		console.log('Cron job completed');
 	},
 };
-router.get('/', () => {
-	return new Response('Movie Reviews Worker');
+router.get('/', async () => {
+	const freshReviews = await getTopReviews();
+	const updatedReviews = await updateDatabase(freshReviews, env);
+	const data = await getMovieReviewData(updatedReviews);
+
+	const token = getAccessToken();
+
+	for (const movieData of data) {
+		await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for 20 seconds
+		await createThreadsPost(movieData, token);
+	}
+
+	console.log('Cron job completed');
 });

@@ -8,4 +8,7 @@ kv_namespaces = [
   { binding = "reviews", id = "539e5146e21644c5a85bfce68a751e6c" }
 ]
 [triggers]
+routes = [
+  "firstdayfirstshow.reddyindra53.workers.dev/"
+]
 crons = ["*/30 5-12 * * *"]  
