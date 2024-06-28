@@ -1,6 +1,8 @@
 import cheerio from 'cheerio';
 
 const userId = '7596993850408332';
+import { Router } from 'itty-router';
+const router = Router();
 
 async function getTopReviews() {
 	try {
@@ -182,3 +184,6 @@ export default {
 		console.log('Cron job completed');
 	},
 };
+router.get('/', () => {
+	return new Response('Movie Reviews Worker');
+});

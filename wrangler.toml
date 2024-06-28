@@ -3,8 +3,9 @@ name = "firstdayfirstshow"
 main = "src/index.js"
 compatibility_date = "2024-06-20"
 
-[[kv_namespaces]]
-binding = "reviews"
-id = "539e5146e21644c5a85bfce68a751e6c"
+
+kv_namespaces = [
+  { binding = "reviews", id = "539e5146e21644c5a85bfce68a751e6c" }
+]
 [triggers]
-cron = ["*/30 5-12 * * *"]
+crons = ["*/30 5-12 * * *"]  
