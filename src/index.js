@@ -44,10 +44,9 @@ async function updateDatabase(freshReviews, env) {
 	for (let i = freshReviews.length - 1; i >= 0; i--) {
 		const review = freshReviews[i];
 
-		// Use the review link as a unique key
 		const key = new URL(review.link).pathname;
 
-		const existingReview = await env.reviews.get(key);
+		const existingReview = await env.REVIEWS.get(key);
 
 		if (existingReview) {
 			console.log(`Review already exists: ${review.title}`);
@@ -55,17 +54,18 @@ async function updateDatabase(freshReviews, env) {
 		}
 	}
 
-	if (updatedFreshReviews.length > 0) {
+	if (freshReviews.length > 0) {
 		// Add new reviews to KV
-		const addPromises = updatedFreshReviews.map((review) => env.reviews.put(new URL(review.link).pathname, JSON.stringify(review)));
+		console.log(freshReviews);
+		const addPromises = freshReviews.map((review) => env.REVIEWS.put(new URL(review.link).pathname, JSON.stringify(review)));
 
 		await Promise.all(addPromises);
-		console.log(`${updatedFreshReviews.length} new reviews added to the database`);
+		console.log(`${freshReviews.length} new reviews added to the database`);
 	} else {
 		console.log('No new reviews to add');
 	}
 
-	return updatedFreshReviews;
+	return freshReviews;
 }
 async function getMovieReviewData(freshReviews) {
 	const movieData = [];
@@ -104,11 +104,13 @@ async function getMovieReviewData(freshReviews) {
 }
 
 async function createThreadsPost({ titlee, img, review, rating, year }, token) {
+	console.log(token);
+	const moviehastag = '#' + titlee;
 	try {
 		const params = new URLSearchParams({
 			media_type: 'IMAGE',
 			image_url: img,
-			text: `${titlee}(${year}) - ${review}\n${'- ' + rating}`,
+			text: `${moviehastag}(${year}) - ${review}\n${'- ' + rating}`,
 			access_token: token,
 		});
 
@@ -117,7 +119,7 @@ async function createThreadsPost({ titlee, img, review, rating, year }, token) {
 		console.log('container created');
 		const { id } = await response.json();
 
-		const publishUrl = `https://graph.threads.net/v1.0/${userId}/threads_publish?creation_id=${id}&access_token=${env.ACCESS_TOKEN}`;
+		const publishUrl = `https://graph.threads.net/v1.0/${userId}/threads_publish?creation_id=${id}&access_token=${token}`;
 		const publishResponse = await fetch(publishUrl, { method: 'POST' });
 		console.log('container published');
 
@@ -135,8 +137,8 @@ async function storeAccessToken(token, expiresIn) {
 }
 
 async function getAccessToken() {
-	const current_token = await kv.get('access_token');
-
+	const current_token = await env.REVIEWS.get('access_token');
+	console.log('inside getACESSTOKEN');
 	if (!current_token) {
 		console.log('no token');
 		return null;
@@ -185,4 +187,16 @@ export default {
 		console.log('Cron job completed');
 	},
 };
-router.get('/', () => 'hello');
+
+router.get('/', async (event, env, ctx) => {
+	const freshReviews = await getTopReviews();
+	const updatedReviews = await updateDatabase(freshReviews, env);
+	const data = await getMovieReviewData(updatedReviews);
+	const token = await getAccessToken();
+	for (const movieData of data) {
+		await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for 20 seconds
+		await createThreadsPost(movieData, token);
+	}
+
+	return 'sucess';
+});
