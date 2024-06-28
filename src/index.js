@@ -105,7 +105,8 @@ async function getMovieReviewData(freshReviews) {
 
 async function createThreadsPost({ titlee, img, review, rating, year }, token) {
 	console.log(token);
-	const moviehastag = '#' + titlee;
+	const tag = titlee.replace(' ', '');
+	const moviehastag = '#' + tag;
 	try {
 		const params = new URLSearchParams({
 			media_type: 'IMAGE',
@@ -136,9 +137,8 @@ async function storeAccessToken(token, expiresIn) {
 	console.log(' ok ! Access token stored in KV');
 }
 
-async function getAccessToken() {
+async function getAccessToken(env) {
 	const current_token = await env.REVIEWS.get('access_token');
-	console.log('inside getACESSTOKEN');
 	if (!current_token) {
 		console.log('no token');
 		return null;
@@ -177,7 +177,7 @@ export default {
 		const updatedReviews = await updateDatabase(freshReviews, env);
 		const data = await getMovieReviewData(updatedReviews);
 
-		const token = await getAccessToken();
+		const token = await getAccessToken(env);
 
 		for (const movieData of data) {
 			await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for 20 seconds
@@ -192,7 +192,7 @@ router.get('/', async (event, env, ctx) => {
 	const freshReviews = await getTopReviews();
 	const updatedReviews = await updateDatabase(freshReviews, env);
 	const data = await getMovieReviewData(updatedReviews);
-	const token = await getAccessToken();
+	const token = await getAccessToken(env);
 	for (const movieData of data) {
 		await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for 20 seconds
 		await createThreadsPost(movieData, token);
