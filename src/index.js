@@ -169,14 +169,19 @@ async function refreshAccessToken(currentToken) {
 	}
 }
 export default {
-	fetch: router.handle,
-
+	fetch: async (request, env, ctx) => {
+		try {
+			return await router.handle(request, env, ctx);
+		} catch (error) {
+			return new Response('An error occurred');
+		}
+	},
 	scheduled: async (event, env, ctx) => {
 		const freshReviews = await getTopReviews();
 		const updatedReviews = await updateDatabase(freshReviews, env);
 		const data = await getMovieReviewData(updatedReviews);
 
-		const token = getAccessToken();
+		const token = await getAccessToken();
 
 		for (const movieData of data) {
 			await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for 20 seconds
@@ -187,16 +192,17 @@ export default {
 	},
 };
 router.get('/', async () => {
-	const freshReviews = await getTopReviews();
-	const updatedReviews = await updateDatabase(freshReviews, env);
-	const data = await getMovieReviewData(updatedReviews);
+	// const freshReviews = await getTopReviews();
+	// const updatedReviews = await updateDatabase(freshReviews, env);
+	// const data = await getMovieReviewData(updatedReviews);
 
-	const token = getAccessToken();
+	// const token = getAccessToken();
 
-	for (const movieData of data) {
-		await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for 20 seconds
-		await createThreadsPost(movieData, token);
-	}
+	// for (const movieData of data) {
+	// 	await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for 20 seconds
+	// 	await createThreadsPost(movieData, token);
+	// }
 
 	console.log('Cron job completed');
+	return new Response('helolo ');
 });
