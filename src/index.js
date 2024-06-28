@@ -1,8 +1,8 @@
 import cheerio from 'cheerio';
 
 const userId = '7596993850408332';
-import { Router } from 'itty-router';
-const router = Router();
+import { AutoRouter } from 'itty-router';
+const router = AutoRouter();
 
 async function getTopReviews() {
 	try {
@@ -169,13 +169,7 @@ async function refreshAccessToken(currentToken) {
 	}
 }
 export default {
-	fetch: async (request, env, ctx) => {
-		try {
-			return await router.handle(request, env, ctx);
-		} catch (error) {
-			return new Response('An error occurred');
-		}
-	},
+	fetch: router.fetch,
 	scheduled: async (event, env, ctx) => {
 		const freshReviews = await getTopReviews();
 		const updatedReviews = await updateDatabase(freshReviews, env);
@@ -191,18 +185,4 @@ export default {
 		console.log('Cron job completed');
 	},
 };
-router.get('/', async () => {
-	// const freshReviews = await getTopReviews();
-	// const updatedReviews = await updateDatabase(freshReviews, env);
-	// const data = await getMovieReviewData(updatedReviews);
-
-	// const token = getAccessToken();
-
-	// for (const movieData of data) {
-	// 	await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for 20 seconds
-	// 	await createThreadsPost(movieData, token);
-	// }
-
-	console.log('Cron job completed');
-	return new Response('helolo ');
-});
+router.get('/', () => 'hello');
