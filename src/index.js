@@ -77,7 +77,6 @@ async function getMovieReviewData(freshReviews) {
 			const html = await response.text();
 			const $ = cheerio.load(html);
 
-			const img = $('.alignnone').attr('src');
 			const ratingstring = $('p span[style="color: #ff0000;"] strong').text().split(':')[1].trim().split(' ');
 
 			const rating = ratingstring[0];
@@ -91,7 +90,6 @@ async function getMovieReviewData(freshReviews) {
 			movieData.push({
 				titlee,
 				rating,
-				img,
 				year,
 				review,
 			});
@@ -103,14 +101,13 @@ async function getMovieReviewData(freshReviews) {
 	return movieData;
 }
 
-async function createThreadsPost({ titlee, img, review, rating, year }, token) {
+async function createThreadsPost({ titlee, review, rating, year }, token) {
 	console.log(token);
 	const tag = titlee.replace(' ', '');
 	const moviehastag = '#' + tag;
 	try {
 		const params = new URLSearchParams({
-			media_type: 'IMAGE',
-			image_url: img,
+			media_type: 'TEXT',
 			text: `${moviehastag}(${year}) - ${review}\n${'- ' + rating}`,
 			access_token: token,
 		});
