@@ -130,7 +130,6 @@ async function createThreadsPost({ titlee, revieww, rating, year }, token) {
 
 		const publishUrl = `https://graph.threads.net/v1.0/${userId}/threads_publish?creation_id=${id}&access_token=${token}`;
 		const publishResponse = await fetch(publishUrl, { method: 'POST' });
-		console.log('container published');
 
 		console.log(await publishResponse.json());
 	} catch (error) {
