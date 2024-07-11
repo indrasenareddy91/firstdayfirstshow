@@ -20,14 +20,15 @@ async function getTopReviews() {
 				.replace(/^Review :/, '')
 				.trim();
 			const link = titleElement.attr('href');
+			var WebSeries = false;
 			if (title.includes('series') || title.includes('show') || title.includes('OTT')) {
-				return true;
+				WebSeries = true;
 			}
 			if (i == 3) {
 				return false;
 			}
 			if (title && link) {
-				freshReviews.push({ title, link });
+				freshReviews.push({ title, link, WebSeries });
 			}
 		});
 		console.log('fresh review collected');
@@ -70,7 +71,7 @@ async function updateDatabase(freshReviews, env) {
 async function getMovieReviewData(freshReviews) {
 	const movieData = [];
 	for (const review of freshReviews) {
-		const { title, link } = review;
+		const { title, link, WebSeries } = review;
 
 		try {
 			const response = await fetch(link);
@@ -84,14 +85,19 @@ async function getMovieReviewData(freshReviews) {
 			const year = new Date(releaseDate).getFullYear();
 
 			const parts = title.split(/\s*[-–]\s*/);
-
-			const titlee = parts[0].trim();
-			const review = parts[1].trim();
+			var titlee, revieww;
+			if (!WebSeries) {
+				titlee = parts[0].trim();
+				revieww = parts[1].trim();
+			} else {
+				titlee = parts[0].trim();
+				revieww = '';
+			}
 			movieData.push({
 				titlee,
 				rating,
 				year,
-				review,
+				revieww,
 			});
 		} catch (error) {
 			console.error(`Error fetching data for "${title}":`, error);
@@ -101,14 +107,19 @@ async function getMovieReviewData(freshReviews) {
 	return movieData;
 }
 
-async function createThreadsPost({ titlee, review, rating, year }, token) {
-	console.log(token);
+async function createThreadsPost({ titlee, revieww, rating, year }, token) {
 	const tag = titlee.replace(' ', '');
+	var review;
+	if (revieww) {
+		review = '- ' + revieww;
+	} else {
+		review = '';
+	}
 	const moviehastag = '#' + tag;
 	try {
 		const params = new URLSearchParams({
 			media_type: 'TEXT',
-			text: `${moviehastag}(${year}) - ${rating}\n${'- ' + review}`,
+			text: `${moviehastag}(${year}) - ${rating}\n${review}`,
 			access_token: token,
 		});
 
