@@ -82,7 +82,6 @@ async function getMovieReviewData(freshReviews) {
 
 			const rating = ratingstring[0];
 			const releaseDate = $('p:contains("Release Date :")').text().replace('Release Date :', '').trim();
-			const year = new Date(releaseDate).getFullYear();
 
 			const parts = title.split(/\s*[-–]\s*/);
 			var titlee, revieww;
@@ -96,7 +95,6 @@ async function getMovieReviewData(freshReviews) {
 			movieData.push({
 				titlee,
 				rating,
-				year,
 				revieww,
 			});
 		} catch (error) {
@@ -107,7 +105,7 @@ async function getMovieReviewData(freshReviews) {
 	return movieData;
 }
 
-async function createThreadsPost({ titlee, revieww, rating, year }, token) {
+async function createThreadsPost({ titlee, revieww, rating }, token) {
 	const tag = titlee.replace(' ', '');
 	var review;
 	if (revieww) {
@@ -119,7 +117,7 @@ async function createThreadsPost({ titlee, revieww, rating, year }, token) {
 	try {
 		const params = new URLSearchParams({
 			media_type: 'TEXT',
-			text: `${moviehastag}(${year}) - ${rating}\n${review}`,
+			text: `${moviehastag} - ${rating}\n${review}`,
 			access_token: token,
 		});
 
@@ -183,14 +181,11 @@ export default {
 		const freshReviews = await getTopReviews();
 		const updatedReviews = await updateDatabase(freshReviews, env);
 		const data = await getMovieReviewData(updatedReviews);
-
 		const token = await getAccessToken(env);
-
 		for (const movieData of data) {
 			await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for 20 seconds
 			await createThreadsPost(movieData, token);
 		}
-
 		console.log('Cron job completed');
 	},
 };
@@ -205,5 +200,5 @@ router.get('/', async (event, env, ctx) => {
 		await createThreadsPost(movieData, token);
 	}
 
-	return 'sucess';
+	return 'success';
 });
