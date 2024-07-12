@@ -117,7 +117,7 @@ async function createThreadsPost({ titlee, revieww, rating }, token) {
 	try {
 		const params = new URLSearchParams({
 			media_type: 'TEXT',
-			text: `${moviehastag} - ${rating}\n${review}`,
+			text: `${moviehastag} - ${rating}`,
 			access_token: token,
 		});
 
