@@ -192,13 +192,17 @@ export default {
 
 router.get('/', async (event, env, ctx) => {
 	const freshReviews = await getTopReviews();
-	const updatedReviews = await updateDatabase(freshReviews, env);
-	const data = await getMovieReviewData(updatedReviews);
-	const token = await getAccessToken(env);
-	for (const movieData of data) {
-		await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for 20 seconds
-		await createThreadsPost(movieData, token);
+	try {
+		const updatedReviews = await updateDatabase(freshReviews, env);
+		const data = await getMovieReviewData(updatedReviews);
+		const token = await getAccessToken(env);
+		for (const movieData of data) {
+			await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for 20 seconds
+			await createThreadsPost(movieData, token);
+		}
+		return 'success';
+	} catch (e) {
+		console.log(e);
+		return 'failed';
 	}
-
-	return 'success';
 });
