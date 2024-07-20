@@ -81,15 +81,13 @@ async function getMovieReviewData(freshReviews) {
 			const ratingstring = $('p span[style="color: #ff0000;"] strong').text().split(':')[1].trim().split(' ');
 
 			const rating = ratingstring[0];
-			const releaseDate = $('p:contains("Release Date :")').text().replace('Release Date :', '').trim();
+			const moviename = $('p:contains("Movie Name :")').text().replace('Release Date :', '').trim();
 
-			const parts = title.split(/\s*[-–]\s*/);
 			var titlee, revieww;
 			if (!WebSeries) {
-				titlee = parts[0].trim();
-				revieww = parts[1].trim();
+				titlee = moviename;
 			} else {
-				titlee = parts[0].trim();
+				titlee = moviename;
 				revieww = '';
 			}
 			movieData.push({
