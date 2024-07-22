@@ -20,15 +20,12 @@ async function getTopReviews() {
 				.replace(/^Review :/, '')
 				.trim();
 			const link = titleElement.attr('href');
-			var WebSeries = false;
-			if (title.includes('series') || title.includes('show') || title.includes('OTT')) {
-				WebSeries = true;
-			}
+
 			if (i == 3) {
 				return false;
 			}
 			if (title && link) {
-				freshReviews.push({ title, link, WebSeries });
+				freshReviews.push({ title, link });
 			}
 		});
 		console.log('fresh review collected');
@@ -69,9 +66,10 @@ async function updateDatabase(freshReviews, env) {
 	return freshReviews;
 }
 async function getMovieReviewData(freshReviews) {
+	console.log('hello');
 	const movieData = [];
 	for (const review of freshReviews) {
-		const { title, link, WebSeries } = review;
+		const { title, link } = review;
 
 		try {
 			const response = await fetch(link);
@@ -81,20 +79,14 @@ async function getMovieReviewData(freshReviews) {
 			const ratingstring = $('p span[style="color: #ff0000;"] strong').text().split(':')[1].trim().split(' ');
 
 			const rating = ratingstring[0];
-			const moviename = $('p:contains("Movie Name :")').text().replace('Movie Name :', '').trim();
+			const moviename = $('h4:contains("Movie Name : ")').text().replace('Movie Name :', '').trim();
+			console.log(moviename);
 			const date = $('p:contains("Release Date :")').text().replace('Release Date :', '').trim();
 			const [day, year] = date.split(',');
-			var titlee, revieww;
-			if (!WebSeries) {
-				titlee = moviename;
-			} else {
-				titlee = moviename;
-				revieww = '';
-			}
+
 			movieData.push({
-				titlee,
+				moviename,
 				rating,
-				revieww,
 				year,
 			});
 		} catch (error) {
@@ -105,19 +97,13 @@ async function getMovieReviewData(freshReviews) {
 	return movieData;
 }
 
-async function createThreadsPost({ titlee, revieww, rating, year }, token) {
-	const tag = titlee.replace(' ', '');
-	var review;
-	if (revieww) {
-		review = '- ' + revieww;
-	} else {
-		review = '';
-	}
-	const moviehastag = '#' + tag;
+async function createThreadsPost({ moviename, rating, year }, token) {
+	console.log(moviename);
+	const moviehastag = '#' + moviename;
 	try {
 		const params = new URLSearchParams({
 			media_type: 'TEXT',
-			text: `${moviehastag}${year} - ${rating}`,
+			text: `${moviehastag}+ " " +(${year.trim()}) - ${rating}`,
 			access_token: token,
 		});
 
