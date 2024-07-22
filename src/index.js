@@ -81,7 +81,7 @@ async function getMovieReviewData(freshReviews) {
 			const ratingstring = $('p span[style="color: #ff0000;"] strong').text().split(':')[1].trim().split(' ');
 
 			const rating = ratingstring[0];
-			const moviename = $('p:contains("Movie Name :")').text().replace('Release Date :', '').trim();
+			const moviename = $('p:contains("Movie Name :")').text().replace('Movie Name :', '').trim();
 			const date = $('p:contains("Release Date :")').text().replace('Release Date :', '').trim();
 			const [day, year] = date.split(',');
 			var titlee, revieww;
