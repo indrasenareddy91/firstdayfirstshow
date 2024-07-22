@@ -82,7 +82,8 @@ async function getMovieReviewData(freshReviews) {
 
 			const rating = ratingstring[0];
 			const moviename = $('p:contains("Movie Name :")').text().replace('Release Date :', '').trim();
-
+			const date = $('p:contains("Release Date :")').text().replace('Release Date :', '').trim();
+			const [day, year] = date.split(',');
 			var titlee, revieww;
 			if (!WebSeries) {
 				titlee = moviename;
@@ -94,6 +95,7 @@ async function getMovieReviewData(freshReviews) {
 				titlee,
 				rating,
 				revieww,
+				year,
 			});
 		} catch (error) {
 			console.error(`Error fetching data for "${title}":`, error);
@@ -103,7 +105,7 @@ async function getMovieReviewData(freshReviews) {
 	return movieData;
 }
 
-async function createThreadsPost({ titlee, revieww, rating }, token) {
+async function createThreadsPost({ titlee, revieww, rating, year }, token) {
 	const tag = titlee.replace(' ', '');
 	var review;
 	if (revieww) {
@@ -115,7 +117,7 @@ async function createThreadsPost({ titlee, revieww, rating }, token) {
 	try {
 		const params = new URLSearchParams({
 			media_type: 'TEXT',
-			text: `${moviehastag} - ${rating}`,
+			text: `${moviehastag}${year} - ${rating}`,
 			access_token: token,
 		});
 
