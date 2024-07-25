@@ -3,6 +3,7 @@ import cheerio from 'cheerio';
 const userId = '7596993850408332';
 import { AutoRouter } from 'itty-router';
 const router = AutoRouter();
+import punch from './punch.js';
 
 async function getTopReviews() {
 	try {
@@ -120,6 +121,7 @@ async function createThreadsPost({ moviename, rating, year }, token) {
 		console.error('Error publishing post:', error);
 	}
 }
+
 async function storeAccessToken(token, expiresIn) {
 	const expiry = Date.now() + expiresIn; // Convert to milliseconds and add current timestamp
 	const data = JSON.stringify({ token, expiry }); // Store token and expiry time as a single value
@@ -161,17 +163,58 @@ async function refreshAccessToken(currentToken) {
 		throw error;
 	}
 }
-export default {
-	fetch: router.fetch,
-	scheduled: async (event, env, ctx) => {
-		const freshReviews = await getTopReviews();
-		const updatedReviews = await updateDatabase(freshReviews, env);
-		const data = await getMovieReviewData(updatedReviews);
+
+async function run() {
+	const freshReviews = await getTopReviews();
+	const newReviews = await updateDatabase(freshReviews, env);
+	if (newReviews.length > 0) {
+		const data = await getMovieReviewData(newReviews);
 		const token = await getAccessToken(env);
 		for (const movieData of data) {
 			await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for 20 seconds
 			await createThreadsPost(movieData, token);
 		}
+	}
+}
+
+async function senddailogue() {
+	const token = await getAccessToken(env);
+	const sent = await postdailogue(token);
+}
+async function postdailogue(token) {
+	let { punchy, director, movie } = punch[Math.floor(Math.random() * punch.length) + 1];
+	try {
+		const params = new URLSearchParams({
+			media_type: 'TEXT',
+			text: `${punchy} - ${movie}`,
+			access_token: token,
+		});
+
+		const url = `https://graph.threads.net/v1.0/${userId}/threads?${params.toString()}`;
+		const response = await fetch(url, { method: 'POST' });
+		console.log('container created');
+		const { id } = await response.json();
+
+		const publishUrl = `https://graph.threads.net/v1.0/${userId}/threads_publish?creation_id=${id}&access_token=${token}`;
+		const publishResponse = await fetch(publishUrl, { method: 'POST' });
+
+		console.log(await publishResponse.json());
+	} catch (error) {
+		console.error('Error publishing post:', error);
+	}
+}
+export default {
+	fetch: router.fetch,
+	scheduled: async (event, env, ctx) => {
+		switch (event.cron) {
+			case '* 10-16 * * *':
+				await run();
+				break;
+			case '* 17 * * *':
+				await senddailogue();
+				break;
+		}
+
 		console.log('Cron job completed');
 	},
 };
