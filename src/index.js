@@ -104,7 +104,7 @@ async function createThreadsPost({ moviename, rating, year }, token) {
 	try {
 		const params = new URLSearchParams({
 			media_type: 'TEXT',
-			text: `${moviehastag}+ " " +(${year.trim()}) - ${rating}`,
+			text: `${moviehastag} - ${rating}`,
 			access_token: token,
 		});
 
@@ -209,9 +209,6 @@ export default {
 		switch (event.cron) {
 			case '* 10-16 * * *':
 				await run();
-				break;
-			case '* 17 * * *':
-				await senddailogue();
 				break;
 		}
 

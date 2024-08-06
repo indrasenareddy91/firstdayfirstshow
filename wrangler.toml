@@ -7,8 +7,5 @@ compatibility_date = "2024-06-20"
 kv_namespaces = [
   { binding = "REVIEWS", id = "539e5146e21644c5a85bfce68a751e6c" }
 ]
-[triggers]
 
-crons = ["* 10-16 * * *"]  
-crons = ["0 17 * * *"]
 
