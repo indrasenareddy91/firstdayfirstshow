@@ -1,4 +1,4 @@
-let punch_dailogues = [
+let punch = [
 	{
 		id: 1,
 		punch: 'Aasha Unte Cancernaina Jayinchochu Bhapaditey Ulcer Tho Kooda Povacchu.',
@@ -418,4 +418,4 @@ let punch_dailogues = [
 		movie: 'Neninte',
 	},
 ];
-export default punch_dailogues;
+export default punch;

@@ -1,9 +1,7 @@
 import cheerio from 'cheerio';
-
-const userId = '7596993850408332';
 import { AutoRouter } from 'itty-router';
 const router = AutoRouter();
-import punch from './punch.js';
+const userId = '7596993850408332';
 
 async function getTopReviews() {
 	try {
@@ -99,12 +97,13 @@ async function getMovieReviewData(freshReviews) {
 }
 
 async function createThreadsPost({ moviename, rating, year }, token) {
+	console.log('moviecreated');
 	console.log(moviename);
 	const moviehastag = '#' + moviename;
 	try {
 		const params = new URLSearchParams({
 			media_type: 'TEXT',
-			text: `${moviehastag} - ${rating}`,
+			text: `${moviehastag.toLocaleLowerCase()} - ${rating}`,
 			access_token: token,
 		});
 
