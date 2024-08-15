@@ -1,6 +1,5 @@
 import cheerio from 'cheerio';
-import { AutoRouter } from 'itty-router';
-const router = AutoRouter();
+import fetch from 'node-fetch';
 const userId = '7596993850408332';
 
 async function getTopReviews() {
@@ -28,6 +27,7 @@ async function getTopReviews() {
 			}
 		});
 		console.log('fresh review collected');
+		console.log(freshReviews);
 		return freshReviews;
 	} catch (error) {
 		console.error('An error occurred while fetching reviews:', error);
@@ -35,37 +35,8 @@ async function getTopReviews() {
 	}
 }
 
-async function updateDatabase(freshReviews, env) {
-	console.log('Updating database using Workers KV');
-
-	for (let i = freshReviews.length - 1; i >= 0; i--) {
-		const review = freshReviews[i];
-
-		const key = new URL(review.link).pathname;
-
-		const existingReview = await env.REVIEWS.get(key);
-
-		if (existingReview) {
-			console.log(`Review already exists: ${review.title}`);
-			freshReviews.splice(i, 1);
-		}
-	}
-
-	if (freshReviews.length > 0) {
-		// Add new reviews to KV
-		console.log(freshReviews);
-		const addPromises = freshReviews.map((review) => env.REVIEWS.put(new URL(review.link).pathname, JSON.stringify(review)));
-
-		await Promise.all(addPromises);
-		console.log(`${freshReviews.length} new reviews added to the database`);
-	} else {
-		console.log('No new reviews to add');
-	}
-
-	return freshReviews;
-}
 async function getMovieReviewData(freshReviews) {
-	console.log('hello');
+	console.log('Fetching movie review data');
 	const movieData = [];
 	for (const review of freshReviews) {
 		const { title, link } = review;
@@ -81,7 +52,6 @@ async function getMovieReviewData(freshReviews) {
 
 			const rating = ratingstring[0];
 			const moviename = $('h4:contains("Movie Name : ")').text().replace('Movie Name :', '').trim();
-			console.log(moviename);
 			const date = $('p:contains("Release Date :")').text().replace('Release Date :', '').trim();
 			const [day, year] = date.split(',');
 
@@ -94,16 +64,15 @@ async function getMovieReviewData(freshReviews) {
 			console.error(`Error fetching data for "${title}":`, error);
 		}
 	}
-	console.log('details are collected');
+	console.log(movieData);
+	console.log('Details are collected');
 	return movieData;
 }
 
 async function createThreadsPost({ moviename, rating, year }, token) {
-	console.log('moviecreated');
-	console.log(moviename);
+	console.log('Creating post for movie:', moviename);
 	const moviehastag = '#' + moviename;
 	const tag = moviehastag.trim().replace(/\s|\./g, '');
-
 	try {
 		const params = new URLSearchParams({
 			media_type: 'TEXT',
@@ -113,7 +82,7 @@ async function createThreadsPost({ moviename, rating, year }, token) {
 
 		const url = `https://graph.threads.net/v1.0/${userId}/threads?${params.toString()}`;
 		const response = await fetch(url, { method: 'POST' });
-		console.log('container created');
+		console.log('Container created');
 		const { id } = await response.json();
 
 		const publishUrl = `https://graph.threads.net/v1.0/${userId}/threads_publish?creation_id=${id}&access_token=${token}`;
@@ -126,17 +95,17 @@ async function createThreadsPost({ moviename, rating, year }, token) {
 }
 
 async function storeAccessToken(token, expiresIn) {
-	const expiry = Date.now() + expiresIn; // Convert to milliseconds and add current timestamp
-	const data = JSON.stringify({ token, expiry }); // Store token and expiry time as a single value
+	const expiry = Date.now() + expiresIn;
+	const data = JSON.stringify({ token, expiry });
 
-	await kv.put('access_token', data);
-	console.log(' ok ! Access token stored in KV');
+	await env.REVIEWS.put('access_token', data);
+	console.log('Access token stored in KV');
 }
 
 async function getAccessToken(env) {
 	const current_token = await env.REVIEWS.get('access_token');
 	if (!current_token) {
-		console.log('no token');
+		console.log('No token');
 		return null;
 	}
 
@@ -144,19 +113,20 @@ async function getAccessToken(env) {
 	const timestampnow = Date.now();
 
 	if (parsedData.expiry <= timestampnow) {
-		console.log('token expired');
+		console.log('Token expired');
 		return refreshAccessToken(current_token);
 	}
 
 	return parsedData.token;
 }
+
 async function refreshAccessToken(currentToken) {
 	try {
 		const response = await fetch(`https://graph.threads.net/refresh_access_token?grant_type=th_refresh_token&access_token=${currentToken}`);
 
 		if (response.ok) {
 			const data = await response.json();
-			storeAccessToken(data.access_token, data.expires_in);
+			await storeAccessToken(data.access_token, data.expires_in);
 			return data.access_token;
 		} else {
 			throw new Error(`Failed to refresh token. Status: ${response.status}`);
@@ -169,10 +139,11 @@ async function refreshAccessToken(currentToken) {
 
 async function run() {
 	const freshReviews = await getTopReviews();
-	const newReviews = await updateDatabase(freshReviews, env);
-	if (newReviews.length > 0) {
-		const data = await getMovieReviewData(newReviews);
-		const token = await getAccessToken(env);
+	if (freshReviews) {
+		const data = await getMovieReviewData(freshReviews);
+		console.log(data);
+		const token =
+			'THQWJXWG90MXYyemppME5hUFNXR0VhT0ctd0JTVGNMYWpCM2dIZA0JhZA1c0Y0dCR0wwNUJCU1RjbWkxRjNMNkcxZAkY0bWx4WXZAPUmdsSkpNUTJDb2M5Y3oxWXl3SV9zOE9peUJUWksydktjTy14OGdnZA0xtd3l4bjdNZAzM1UGQ3blk5aFc0Q1Jz';
 		for (const movieData of data) {
 			await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for 20 seconds
 			await createThreadsPost(movieData, token);
@@ -180,34 +151,15 @@ async function run() {
 	}
 }
 
-export default {
-	fetch: router.fetch,
-	scheduled: async (event, env, ctx) => {
-		const freshReviews = await getTopReviews();
-		const updatedReviews = await updateDatabase(freshReviews, env);
-		const data = await getMovieReviewData(updatedReviews);
-		const token = await getAccessToken(env);
-		for (const movieData of data) {
-			await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for 20 seconds
-			await createThreadsPost(movieData, token);
-		}
-		console.log('Cron job completed');
-	},
-};
-
-router.get('/', async (event, env, ctx) => {
-	const freshReviews = await getTopReviews();
+// Main function to run the script
+async function main() {
 	try {
-		const updatedReviews = await updateDatabase(freshReviews, env);
-		const data = await getMovieReviewData(updatedReviews);
-		const token = await getAccessToken(env);
-		for (const movieData of data) {
-			await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for 20 seconds
-			await createThreadsPost(movieData, token);
-		}
-		return 'success';
-	} catch (e) {
-		console.log(e);
-		return 'failed';
+		await run();
+		console.log('Script completed successfully');
+	} catch (error) {
+		console.error('An error occurred:', error);
 	}
-});
+}
+
+// Run the script
+main();
