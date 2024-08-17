@@ -173,11 +173,32 @@ async function run() {
 	if (newReviews.length > 0) {
 		const data = await getMovieReviewData(newReviews);
 		const token = await getAccessToken(env);
-		for (const movieData of data) {
-			await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for 20 seconds
-			await createThreadsPost(movieData, token);
-		}
 	}
+}
+async function postMovieData(data, token) {
+	let allSuccessful = true;
+
+	try {
+		for (const movieData of data) {
+			try {
+				await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for 20 seconds
+				await createThreadsPost(movieData, token);
+			} catch (error) {
+				console.error(`Failed to post movie data: ${error.message}`);
+				allSuccessful = false;
+				// Optionally, break the loop here if you want to stop on first failure
+				// break;
+			}
+		}
+	} catch (error) {
+		console.error(`An unexpected error occurred: ${error.message}`);
+		allSuccessful = false;
+	}
+
+	return {
+		success: allSuccessful,
+		message: allSuccessful ? 'All movie data posted successfully' : 'Some posts failed',
+	};
 }
 
 export default {
@@ -187,11 +208,8 @@ export default {
 		const updatedReviews = await updateDatabase(freshReviews, env);
 		const data = await getMovieReviewData(updatedReviews);
 		const token = await getAccessToken(env);
-		for (const movieData of data) {
-			await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for 20 seconds
-			await createThreadsPost(movieData, token);
-		}
-		console.log('Cron job completed');
+		const result = await postMovieData(data, token);
+		return result;
 	},
 };
 
@@ -201,11 +219,8 @@ router.get('/', async (event, env, ctx) => {
 		const updatedReviews = await updateDatabase(freshReviews, env);
 		const data = await getMovieReviewData(updatedReviews);
 		const token = await getAccessToken(env);
-		for (const movieData of data) {
-			await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for 20 seconds
-			await createThreadsPost(movieData, token);
-		}
-		return 'success';
+		const result = await postMovieData(data, token);
+		return result;
 	} catch (e) {
 		console.log(e);
 		return 'failed';

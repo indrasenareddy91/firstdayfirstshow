@@ -2,6 +2,8 @@
   "name": "firstdayfirstshow",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
+
   "scripts": {
     "deploy": "wrangler deploy",
     "dev": "wrangler dev --test-scheduled",
@@ -12,6 +14,7 @@
   },
   "dependencies": {
     "cheerio": "^1.0.0-rc.12",
-    "itty-router": "^5.0.17"
+    "itty-router": "^5.0.17",
+    "node-fetch": "^3.3.2"
   }
 }
