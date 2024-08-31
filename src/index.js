@@ -107,7 +107,7 @@ async function createThreadsPost({ moviename, rating, year }, token) {
 	try {
 		const params = new URLSearchParams({
 			media_type: 'TEXT',
-			text: `${tag} - ${rating}`,
+			text: `${tag.toLocaleLowerCase()} - ${rating}`,
 			access_token: token,
 		});
 
