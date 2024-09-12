@@ -107,7 +107,7 @@ async function createThreadsPost({ moviename, rating, year }, token) {
 	try {
 		const params = new URLSearchParams({
 			media_type: 'TEXT',
-			text: `${tag.toLocaleLowerCase()} - ${rating}`,
+			text: `${tag.toLowerCase()} - ${rating}`,
 			access_token: token,
 		});
 
@@ -115,7 +115,7 @@ async function createThreadsPost({ moviename, rating, year }, token) {
 		const response = await fetch(url, { method: 'POST' });
 		console.log('container created');
 		const { id } = await response.json();
-
+		console.log(id);
 		const publishUrl = `https://graph.threads.net/v1.0/${userId}/threads_publish?creation_id=${id}&access_token=${token}`;
 		const publishResponse = await fetch(publishUrl, { method: 'POST' });
 
@@ -125,22 +125,18 @@ async function createThreadsPost({ moviename, rating, year }, token) {
 	}
 }
 
-async function storeAccessToken(token, expiresIn) {
-	const expiry = Date.now() + expiresIn; // Convert to milliseconds and add current timestamp
+async function storeAccessToken(token, expiresIn, env) {
+	const expiry = Date.now() + 3456000 * 1000; // Convert to milliseconds and add current timestamp
 	const data = JSON.stringify({ token, expiry }); // Store token and expiry time as a single value
-
-	await kv.put('access_token', data);
+	const kv = await env.REVIEWS.put('access_token', data);
 	console.log(' ok ! Access token stored in KV');
 }
 
 async function getAccessToken(env) {
 	const current_token = await env.REVIEWS.get('access_token');
-	if (!current_token) {
-		console.log('no token');
-		return null;
-	}
 
 	const parsedData = JSON.parse(current_token);
+	console.log(parsedData);
 	const timestampnow = Date.now();
 
 	if (parsedData.expiry <= timestampnow) {
@@ -150,13 +146,15 @@ async function getAccessToken(env) {
 
 	return parsedData.token;
 }
-async function refreshAccessToken(currentToken) {
+async function refreshAccessToken(currentToken, env) {
+	console.log(env.REVIEWS);
 	try {
 		const response = await fetch(`https://graph.threads.net/refresh_access_token?grant_type=th_refresh_token&access_token=${currentToken}`);
 
 		if (response.ok) {
 			const data = await response.json();
-			storeAccessToken(data.access_token, data.expires_in);
+			console.log('data from new api', data);
+			await storeAccessToken(data.access_token, data.expires_in, env);
 			return data.access_token;
 		} else {
 			throw new Error(`Failed to refresh token. Status: ${response.status}`);
@@ -167,14 +165,6 @@ async function refreshAccessToken(currentToken) {
 	}
 }
 
-async function run() {
-	const freshReviews = await getTopReviews();
-	const newReviews = await updateDatabase(freshReviews, env);
-	if (newReviews.length > 0) {
-		const data = await getMovieReviewData(newReviews);
-		const token = await getAccessToken(env);
-	}
-}
 async function postMovieData(data, token) {
 	let allSuccessful = true;
 
@@ -204,6 +194,7 @@ async function postMovieData(data, token) {
 export default {
 	fetch: router.fetch,
 	scheduled: async (event, env, ctx) => {
+		console.log('scheduled');
 		const freshReviews = await getTopReviews();
 		const updatedReviews = await updateDatabase(freshReviews, env);
 		const data = await getMovieReviewData(updatedReviews);
@@ -214,6 +205,7 @@ export default {
 };
 
 router.get('/', async (event, env, ctx) => {
+	console.log(env.REVIEWS);
 	const freshReviews = await getTopReviews();
 	try {
 		const updatedReviews = await updateDatabase(freshReviews, env);
